@@ -12,7 +12,6 @@ import com.haulmont.addon.search.strategy.HeaderEntry;
 import com.haulmont.addon.search.strategy.SearchEntity;
 import com.haulmont.addon.search.strategy.SearchEntry;
 import com.haulmont.addon.search.strategy.SearchStrategy;
-import com.haulmont.cuba.core.global.Messages;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -31,13 +30,8 @@ import java.util.stream.Stream;
 @Scope("prototype")
 public class SearchPresenterImpl implements SearchPresenter {
 
-    public static final String STRATEGY_MESSAGE_PREFIX = "searchStrategy.";
-
     @Inject
     protected SearchContextFactory searchContextFactory;
-
-    @Inject
-    protected Messages messages;
 
     protected RichSearch component;
 
@@ -78,13 +72,7 @@ public class SearchPresenterImpl implements SearchPresenter {
             return Stream.empty();
         }
 
-        SearchEntry header = getHeaderEntryForStrategy(searchStrategy);
-        return Stream.concat(Stream.of(header), searchEntries.stream());
-    }
-
-    protected SearchEntry getHeaderEntryForStrategy(SearchStrategy searchStrategy) {
-        String localizedName = messages.getMainMessage(STRATEGY_MESSAGE_PREFIX + searchStrategy.name());
-        return new HeaderEntry(localizedName);
+        return searchEntries.stream();
     }
 
     /**

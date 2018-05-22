@@ -37,11 +37,22 @@
                   configuration="webcontent"
                   ext="zip"
                   name="search-web"/>
+        <artifact classifier="web"
+                  configuration="webcontent"
+                  ext="zip"
+                  name="search-web-toolkit"
+                  skipIfExists="web-toolkit"/>
         <property name="cuba.web.componentsConfig"
                   value="+com/haulmont/addon/search/search-web-components.xml"/>
         <property name="cuba.springContextConfig"
                   value="+com/haulmont/addon/search/search-web-spring.xml"/>
         <property name="cuba.mainMessagePack"
                   value="+com.haulmont.addon.search.web"/>
+        <property name="cuba.web.widgetSet"
+                  value="com.haulmont.addon.search.web.toolkit.ui.AppWidgetSet"/>
+    </module>
+    <module dependsOn="web"
+            name="web-toolkit">
+        <artifact name="search-web-toolkit"/>
     </module>
 </app-component>

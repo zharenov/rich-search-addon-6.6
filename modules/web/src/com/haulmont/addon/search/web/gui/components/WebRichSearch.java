@@ -4,16 +4,18 @@ import com.google.common.collect.Lists;
 import com.haulmont.addon.search.context.SearchContext;
 import com.haulmont.addon.search.gui.components.RichSearch;
 import com.haulmont.addon.search.presenter.SearchPresenter;
-import com.haulmont.addon.search.strategy.HeaderEntry;
 import com.haulmont.addon.search.strategy.SearchEntity;
 import com.haulmont.addon.search.strategy.SearchEntry;
 import com.haulmont.addon.search.strategy.SearchStrategy;
 import com.haulmont.addon.search.web.gui.components.toolkit.ui.RichSearchField;
+import com.haulmont.chile.core.model.MetaPropertyPath;
+import com.haulmont.cuba.core.entity.Entity;
 import com.haulmont.cuba.gui.components.CaptionMode;
-import com.haulmont.cuba.gui.components.Component;
 import com.haulmont.cuba.web.gui.components.WebSuggestionField;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,8 @@ import java.util.function.Function;
  */
 public class WebRichSearch extends WebSuggestionField implements RichSearch {
 
+    private Logger log = LoggerFactory.getLogger(WebRichSearch.class);
+
     protected SearchContext context;
     protected SearchPresenter presenter;
 
@@ -36,7 +40,29 @@ public class WebRichSearch extends WebSuggestionField implements RichSearch {
 
         component = new RichSearchField();
 
-        component.setTextViewConverter(this::convertToTextView);
+        component.setTextViewConverter(obj -> {
+            if (obj == null) {
+                return StringUtils.EMPTY;
+            }
+
+            Entity entity = (Entity) obj;
+            if (captionMode == CaptionMode.ITEM) {
+                return textViewConverter.convertToPresentation(entity, String.class, userSession.getLocale());
+            }
+
+            if (StringUtils.isNotEmpty(captionProperty)) {
+                MetaPropertyPath propertyPath = entity.getMetaClass().getPropertyPath(captionProperty);
+                if (propertyPath == null) {
+                    throw new IllegalArgumentException(String.format("Can't find property for given caption property: %s", captionProperty));
+                }
+
+                return metadataTools.format(entity.getValueEx(captionProperty), propertyPath.getMetaProperty());
+            }
+
+            log.warn("Using StringToEntityConverter to get entity text presentation. Caption property is not defined " +
+                    "while caption mode is \"PROPERTY\"");
+            return textViewConverter.convertToPresentation(entity, String.class, userSession.getLocale());
+        });
 
         component.setSearchExecutor(query -> {
             cancelSearch();
@@ -59,8 +85,6 @@ public class WebRichSearch extends WebSuggestionField implements RichSearch {
                 resetValue();
             }
         });
-
-        setOptionsStyleProvider(this::defaultOptionsStyleProvider);
     }
 
     /**
@@ -121,17 +145,4 @@ public class WebRichSearch extends WebSuggestionField implements RichSearch {
         return CollectionUtils.isNotEmpty(searchResult) ? searchResult : Lists.newArrayList(SearchEntity.NO_RESULTS);
     }
 
-    protected String defaultOptionsStyleProvider(Component component, Object o) {
-
-        if (! (o instanceof SearchEntry) || SearchEntity.NO_RESULTS.equals(o)) {
-            return StringUtils.EMPTY;
-        }
-
-        SearchEntity searchEntity = (SearchEntity) o;
-        if (searchEntity.getDelegate() instanceof HeaderEntry) {
-            return "rs-header-entry";
-        }
-
-        return "rs-search-entry";
-    }
 }
